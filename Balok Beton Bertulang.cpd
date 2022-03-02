@@ -1,0 +1,72 @@
+"Desain Balok Tulangan Tunggal (Singly Reinforce Beam)
+
+'<h4> Parameter Desain: </h4 > 
+'Momen ultimit,'M_u = 100kNm
+'Tinggi balok,'h = 450mm
+'Lebar balok,'b = 250mm
+'Selimut beton,'d_s = 40mm
+'Mutu beton,'f_c = 21MPa
+'Tegangan leleh baja,'f_y = 420MPa
+'Diamater tulangan pokok,'D = 16mm
+'Diameter tulangan sengkang,'D_v = 13mm
+
+'<h4> Desain tulangan: </h4> 
+d = h - (d_s + D_v + D/2)
+φ = 0.9'asumsi tulangan kontrol tarik
+R_n = M_u/(φ*b*d^2)
+m = f_y/(0.85*f_c)
+
+'Rasio tulangan perlu,
+ρ = (1/m)*(1 - sqrt(1 - (2*m*R_n)/f_y))
+β_1 = 0.85
+ρ_bal = (0.85*f_c)/(f_y)*β_1*(600MPa/(600MPa + f_y))
+ρ_max = 0.75*ρ_bal
+ρ_min = 1.4MPa/f_y
+
+'Kontrol rasio tulangan,
+#if ρ < ρ_min
+	'ρ < ρ_min,'ρ_perlu = ρ_min
+#else if ρ < ρ_max
+	'ρ_min < ρ < ρ_max,'ρ_perlu = ρ
+#else
+	'Melebihi ρ_max, Revisi Tulangan!
+#end if
+
+'Jumlah tulangan perlu,
+A_tul = 1/4*π*D^2
+As_perlu = ρ_perlu*b*d
+n_tul = ceiling(As_perlu/A_tul)
+
+'Cek spasi tulangan
+s = (b - (n_tul*D) - (2*(d_s + D_v)))/(n_tul - 1)
+#if s > 25mm
+	's > 25mm, Spasi memenuhi
+#else
+	's < 25mm, Spasi tidak memenuhi!
+#end if
+
+'Cek kapasitas momen
+A_s = n_tul*A_tul
+a = (A_s*f_y)/(0.85*f_c*b)
+c = a/β_1
+ε_s = ((d - c)/c)*0.002
+
+#if ε_s > 0.005
+	'ε_s > 0.005, kontrol tarik,'φ = 0.9
+#else if ε_s < 0.002
+	'ε_s < 0.002, kontrol tekan,'φ = 0.65
+#else
+	'0.002 < ε_s < 0.005, Transisi,'
+	φ = 0.65 + (0.25*(ε_s - 0.002)/0.003)
+#end if
+
+'Momen nominal terfaktor,
+φM_n = φ*A_s*f_y*(d - a/2)
+
+'Kontrol kapasitas momen,
+#if φM_n > M_u
+	φM_n > M_u', (tulangan memenuhi)
+#else
+	φM_n < M_u', (revisi desain!)
+#end if
+'Maka, digunakan 'n_tul'buah tulangan'D'
